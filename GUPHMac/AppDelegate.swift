@@ -15,6 +15,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ aNotification: Notification) {
         // Insert code here to initialize your application
+        UserDefaults.standard.register(defaults: ["csrftoken":""])
+        UserDefaults.standard.register(defaults: ["sessionid":""])
+        UserDefaults.standard.register(defaults: ["query_hash":""])
     }
 
     func applicationWillTerminate(_ aNotification: Notification) {

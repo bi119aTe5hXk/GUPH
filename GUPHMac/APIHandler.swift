@@ -44,7 +44,7 @@ func getUser(username:String, completion: @escaping (Bool?, Any?) -> Void) {
     }
 }
 
-func getNextPage(query_hash:String,variables:String, completion: @escaping (Bool?, Any?) -> Void) {
+func getNextPage(query_hash:String, variables:String, completion: @escaping (Bool?, Any?) -> Void) {
     let urlstr = mainURL + "graphql/query/?query_hash=\(query_hash)&variables=\(variables)"
     
     conServ(serviceURL: urlstr) { (isSuccessed, value) in
@@ -54,7 +54,7 @@ func getNextPage(query_hash:String,variables:String, completion: @escaping (Bool
 
 func getPostContent(shortCode:String, completion: @escaping (Bool?, Any?) -> Void) {
     let urlstr = mainURL + "p/\(shortCode)/?__a=1"
-    
+    //print("loading userCount:\(userCount)")
     conServ(serviceURL: urlstr) { (isSuccessed, value) in
         completion(isSuccessed, value);
     }
