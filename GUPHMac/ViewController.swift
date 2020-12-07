@@ -7,6 +7,9 @@
 
 import Cocoa
 
+let POSTTAGS_MODE = "posttags"
+let LATESETTAGS_MODE = "latesttags"
+
 class ViewController: NSViewController {
     @IBOutlet weak var csrftokenTF: NSTextField!
     @IBOutlet weak var sessionidTF: NSTextField!
@@ -17,6 +20,7 @@ class ViewController: NSViewController {
     @IBOutlet weak var perPageTF: NSTextField!
     @IBOutlet weak var fileStartCountTF: NSTextField!
     
+    @IBOutlet weak var tagTF: NSTextField!
     
     @IBOutlet weak var loadBTN: NSButton!
     
@@ -31,6 +35,9 @@ class ViewController: NSViewController {
     
     let userdefault = UserDefaults.standard
     let nGroup = DispatchGroup()
+    
+    var userIDList = [String]()
+    
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -62,6 +69,80 @@ class ViewController: NSViewController {
         setCookieValue(csrftokenstr: self.csrftokenTF.stringValue, sessionidstr: self.sessionidTF.stringValue)
     }
     
+    @IBAction func resetBTNP(_ sender: Any) {
+        userCountU = 0
+        self.statusLabel.stringValue = "Ready."
+        self.usernameTF.string = ""
+    }
+    
+    // MARK: - Latest Tags list user
+    
+    @IBAction func loadTagBTNP(_ sender: Any) {
+        exportList = [String]()
+        if self.tagTF.stringValue.lengthOfBytes(using: .utf8) <= 0{
+            return
+        }
+        DispatchQueue.main.async {
+            self.statusLabel.stringValue = "Loading latest tags..."
+        }
+        self.nGroup.enter()
+        getTagList(tag: self.tagTF.stringValue.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!) { (isSuccessed, value) in
+            if !isSuccessed!{
+                return
+            }
+            let json = value as! Dictionary<String, Any>
+            let graphql = json["graphql"] as! Dictionary<String, Any>
+            
+            let hashtag = graphql["hashtag"] as! Dictionary<String, Any>
+            let edge_hashtag_to_media = hashtag["edge_hashtag_to_media"] as! Dictionary<String, Any>
+            let edges = edge_hashtag_to_media["edges"] as! Array<Any>
+            for item in edges {
+                let edge = item as! Dictionary<String, Any>
+                let node = edge["node"] as! Dictionary<String, Any>
+                let shortcode = node["shortcode"] as! String
+                print("\(shortcode)")
+                
+                self.postList.append(shortcode)
+                
+                let owner = node["owner"] as! Dictionary<String, Any>
+                let userid = owner["id"] as! String
+                self.userIDList.append(userid)
+            }
+            
+            let page_info = edge_hashtag_to_media["page_info"] as! Dictionary<String, Any>
+            let has_next_page = page_info["has_next_page"] as! Bool
+            
+            
+            if has_next_page == true && self.postList.count < self.countTF.intValue {
+                self.end_cursor = page_info["end_cursor"] as! String
+                
+                self.loadNextPage(mode: LATESETTAGS_MODE)
+            }else{
+                DispatchQueue.main.async {
+                    self.statusLabel.stringValue = "\(self.postList.count) post loaded.  Reading each posts..."
+                }
+                
+                print("load default post compete:\(self.postList)")
+            }
+            self.nGroup.leave()
+            
+        }
+        self.nGroup.notify(queue: .main) {
+            DispatchQueue.main.async {
+            self.statusLabel.stringValue = "\(self.postList.count) post loaded.  Reading each posts..."
+            }
+                print("Finished all post list requests.")
+            print(self.userIDList)
+            self.loadAllPostContent(mode: LATESETTAGS_MODE)
+            }
+    }
+    
+    
+    
+    
+    
+    // MARK: - User post tags
+    
     @IBAction func loadBTNP(_ sender: Any) {
         //clean up each time
         postList = [String]()
@@ -75,10 +156,9 @@ class ViewController: NSViewController {
             return
         }
         
-        
-        self.statusLabel.stringValue = "Loading list..."
-        
-        
+        DispatchQueue.main.async {
+            self.statusLabel.stringValue = "Loading user posts..."
+        }
         let user = self.userArr[userCountU]
         
         if user.lengthOfBytes(using: .utf8) > 0 {
@@ -127,10 +207,11 @@ class ViewController: NSViewController {
                         self.end_cursor = page_info["end_cursor"] as! String
                         self.user_id = user["id"] as! String
                         
-                        self.loadNextPage()
+                        self.loadNextPage(mode: POSTTAGS_MODE)
                     }else{
-                        
-                        self.statusLabel.stringValue = "Load list competed.  Loading each posts..."
+                        DispatchQueue.main.async {
+                        self.statusLabel.stringValue = "\(self.postList.count) post loaded.  Reading each posts..."
+                        }
                         print("load 12 post compete:\(self.postList)")
                     }
                     self.nGroup.leave()
@@ -140,26 +221,52 @@ class ViewController: NSViewController {
         }
         
         self.nGroup.notify(queue: .main) {
-            self.statusLabel.stringValue = "Load list competed. Loading each posts..."
+            DispatchQueue.main.async {
+            self.statusLabel.stringValue = "\(self.postList.count) post loaded.  Reading each posts..."
+            }
                 print("Finished all post list requests.")
-            self.loadAllPostContent()
+            self.loadAllPostContent(mode: POSTTAGS_MODE)
             }
     }
     
-    func loadNextPage()  {
+    func loadNextPage(mode:String)  {
         if self.qhTF.stringValue.lengthOfBytes(using: .utf8) > 0 && self.postList.count < self.countTF.intValue{
             sleep(1)
             self.nGroup.enter()
-            getNextPage(query_hash: self.qhTF.stringValue, variables: self.nextPageVariables(userid: self.user_id, end_cursor: self.end_cursor)) { (isSuccessed, value) in
+            var nPV = ""
+            if mode == POSTTAGS_MODE {
+                nPV = self.nextPageVariables(userid: self.user_id, end_cursor: self.end_cursor)
+            }else if mode == LATESETTAGS_MODE{
+                nPV = self.nextTagPageVariables(tag: self.tagTF.stringValue, end_cursor: self.end_cursor)
+            }
+            getNextPage(query_hash: self.qhTF.stringValue, variables:nPV ) { (isSuccessed, value) in
                 if isSuccessed! {
                     let json = value as! Dictionary<String, Any>
                     let data = json["data"] as! Dictionary<String, Any>
-                    let user = data["user"] as! Dictionary<String, Any>
-                    let edge_owner_to_timeline_media = user["edge_owner_to_timeline_media"] as! Dictionary<String, Any>
-                    //set cursor for loading next page
-                    let page_info = edge_owner_to_timeline_media["page_info"] as! Dictionary<String, Any>
                     
-                    let edges = edge_owner_to_timeline_media["edges"] as! Array<Any>
+                    var page_info = Dictionary<String, Any>.init()
+                    var edges = Array<Any>.init()
+                    
+                    if mode == POSTTAGS_MODE {
+                        let dic = data["user"] as! Dictionary<String, Any>
+                        let edge_owner_to_timeline_media = dic["edge_owner_to_timeline_media"] as! Dictionary<String, Any>
+                        //set cursor for loading next page
+                        page_info = edge_owner_to_timeline_media["page_info"] as! Dictionary<String, Any>
+                        
+                        edges = edge_owner_to_timeline_media["edges"] as! Array<Any>
+                    }else if mode == LATESETTAGS_MODE{
+                        let dic = data["hashtag"] as! Dictionary<String, Any>
+                        let edge_hashtag_to_media = dic["edge_hashtag_to_media"]as! Dictionary<String, Any>
+                           //set cursor for loading next page
+                           page_info = edge_hashtag_to_media["page_info"] as! Dictionary<String, Any>
+                        
+                        edges = edge_hashtag_to_media["edges"] as! Array<Any>
+                    }
+                    
+                    
+                    
+                    
+                    
                     for item in edges {
                         let edge = item as! Dictionary<String, Any>
                         let node = edge["node"] as! Dictionary<String, Any>
@@ -167,6 +274,10 @@ class ViewController: NSViewController {
                         //print(shortcode)
                         print("\(shortcode)")
                         self.postList.append(shortcode)
+                        
+                        let owner = node["owner"] as! Dictionary<String, Any>
+                        let userid = owner["id"] as! String
+                        self.userIDList.append(userid)
                     }
                     
                     let has_next_page = page_info["has_next_page"] as! Bool
@@ -174,55 +285,72 @@ class ViewController: NSViewController {
                             if let cursor = page_info["end_cursor"]{
                                 self.end_cursor = cursor as! String
                             }
-                            self.loadNextPage()
+                            self.loadNextPage(mode:mode)
                         }
                     self.nGroup.leave()
                 }
             }
         }
         else{
+            DispatchQueue.main.async {
             self.statusLabel.stringValue = "Load all list competed."
+            }
             print("load all post compete:\(self.postList)")
             
         }
         
     }
-    
+    func nextTagPageVariables(tag:String,end_cursor:String) -> String {
+        let str =  "{\"tag_name\":\"\(tag)\",\"first\":\(self.perPageTF.stringValue),\"after\":\"\(end_cursor)\"}".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
+        //print(str!)
+        return str!
+    }
     func nextPageVariables(userid:String,end_cursor:String) -> String {
         let str =  "{\"id\":\"\(userid)\",\"first\":\(self.perPageTF.stringValue),\"after\":\"\(end_cursor)\"}".addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)
         //print(str!)
         return str!
     }
-    func loadAllPostContent() {
+    
+    
+    func loadAllPostContent(mode:String) {
         
         print("postListCount:\(self.postList.count)")
         
         //postList[user][posts]
         for scode in self.postList {
                 self.nGroup.enter()
+            DispatchQueue.main.async {
                 self.statusLabel.stringValue = "Loading content of posts..."
+            }
                 sleep(1)
                 getPostContent(shortCode: scode) { (isSuccessed, result) in
                     if isSuccessed! {
                         let json = result as! Dictionary<String,Any>
                         let graphql = json["graphql"] as! Dictionary<String, Any>
                         let shortcode_media = graphql["shortcode_media"] as! Dictionary<String, Any>
-                        let edge_media_to_caption = shortcode_media["edge_media_to_caption"] as! Dictionary<String, Any>
-                        let edges = edge_media_to_caption["edges"] as! Array<Any>
-                        if edges.count > 0 {
-                            let edge = edges[0] as! Dictionary<String, Any>
-                            let node = edge["node"] as! Dictionary<String, Any>
-                            let text = node["text"] as! String
-                            
-                            //print(text)
-                            let tags = self.findHashTags(str: text)
-                            for item in tags {
-                                print("\(item)")
-                                self.exportList.append(item)
-    //                            self.statusLabel.stringValue = "Adding tags..."
+                        
+                            if mode == POSTTAGS_MODE {
+                                let edge_media_to_caption = shortcode_media["edge_media_to_caption"] as! Dictionary<String, Any>
+                                let edges = edge_media_to_caption["edges"] as! Array<Any>
+                                if edges.count > 0 {
+                                    let edge = edges[0] as! Dictionary<String, Any>
+                                    let node = edge["node"] as! Dictionary<String, Any>
+                                let text = node["text"] as! String
+                                //print(text)
+                                let tags = self.findHashTags(str: text)
+                                for item in tags {
+                                    print("\(item)")
+                                    self.exportList.append(item)
+                                }
+                            }
+                            }else if mode == LATESETTAGS_MODE{
+                                let owner = shortcode_media["owner"] as! Dictionary<String, Any>
+                                let username = owner["username"] as! String
+                                self.exportList.append(username)
                             }
                             
-                        }
+                            
+                       
                         self.nGroup.leave()
                     }else{
                         print("load failed:\(result as! String)")
@@ -230,7 +358,9 @@ class ViewController: NSViewController {
                 
             }
         }
-        self.statusLabel.stringValue = "Load all post data competed. Exporting..."
+        DispatchQueue.main.async {
+        self.statusLabel.stringValue = "\(self.exportList.count) loaded. Exporting..."
+        }
         self.nGroup.notify(queue: .main) {
                 print("Finished all post data requests.")
             self.exportFile()
@@ -239,7 +369,7 @@ class ViewController: NSViewController {
     
     
     func exportFile() {
-        self.statusLabel.stringValue = "Exporting data..."
+        self.statusLabel.stringValue = "Exporting \(self.exportList.count) data..."
         
         
         var fileStrData:String = ""
@@ -308,7 +438,9 @@ class ViewController: NSViewController {
 
                         do {
                             try fileStrData.write(to: filename!, atomically: true, encoding: .utf8)
+                            DispatchQueue.main.async {
                             self.statusLabel.stringValue = "Export data competed."
+                            }
                         } catch {
                             print("failed to write file (bad permissions, bad filename etc.)")
                         }

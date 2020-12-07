@@ -9,6 +9,7 @@ import Foundation
 import Alamofire
 //let getUserInfoURL = "https://www.instagram.com/\(username)/?__a=1"
 //let getUserPostURL = "https://www.instagram.com/p/\(post_id)/?__a=1"
+//let getTagListURL ="https://www.instagram.com/explore/tags/\(tag)/?__a=1"
 
 let mainURL = "https://www.instagram.com/"
 let cookieDomian = ".instagram.com"
@@ -55,6 +56,13 @@ func getNextPage(query_hash:String, variables:String, completion: @escaping (Boo
 func getPostContent(shortCode:String, completion: @escaping (Bool?, Any?) -> Void) {
     let urlstr = mainURL + "p/\(shortCode)/?__a=1"
     //print("loading userCount:\(userCount)")
+    conServ(serviceURL: urlstr) { (isSuccessed, value) in
+        completion(isSuccessed, value);
+    }
+}
+
+func getTagList(tag:String, completion: @escaping (Bool?, Any?) -> Void){
+    let urlstr = mainURL + "explore/tags/\(tag)/?__a=1"
     conServ(serviceURL: urlstr) { (isSuccessed, value) in
         completion(isSuccessed, value);
     }
