@@ -88,6 +88,7 @@ func conServ(serviceURL: String, completion: @escaping (Bool?, Any?) -> Void) {
             break
         case .failure(let error):
             // error handling
+            print(error)
             completion(false, error.localizedDescription)
             break
         }

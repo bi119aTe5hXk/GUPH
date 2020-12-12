@@ -20,6 +20,9 @@ class ViewController: NSViewController {
     @IBOutlet weak var perPageTF: NSTextField!
     @IBOutlet weak var fileStartCountTF: NSTextField!
     
+    @IBOutlet weak var datePC: NSDatePickerCell!
+    @IBOutlet weak var notIncludeAFCB: NSButton!
+    
     @IBOutlet weak var tagTF: NSTextField!
     
     @IBOutlet weak var loadBTN: NSButton!
@@ -36,11 +39,14 @@ class ViewController: NSViewController {
     let userdefault = UserDefaults.standard
     let nGroup = DispatchGroup()
     
-    var userIDList = [String]()
+    var lastDate = TimeInterval.init()
+    var isDatePassed = false
     
     
     override func viewDidLoad() {
         super.viewDidLoad()
+        // Do any additional setup after loading the view.
+        
         if let csrftoken = userdefault.string(forKey: "csrftoken"){
             self.csrftokenTF.stringValue = csrftoken
         }
@@ -52,7 +58,15 @@ class ViewController: NSViewController {
         }
         self.applyCookie(self)
         
-        // Do any additional setup after loading the view.
+        let calendar = Calendar(identifier: .gregorian)
+        let currentDate = Date()
+            var components = DateComponents()
+            components.calendar = calendar
+        let maxDate = calendar.date(byAdding: components, to: currentDate)!
+        self.datePC.maxDate = maxDate
+        
+        components.year = -1
+        self.datePC.dateValue = calendar.date(byAdding: components, to: currentDate)!
         self.statusLabel.stringValue = "Ready."
     }
 
@@ -104,9 +118,6 @@ class ViewController: NSViewController {
                 
                 self.postList.append(shortcode)
                 
-                let owner = node["owner"] as! Dictionary<String, Any>
-                let userid = owner["id"] as! String
-                self.userIDList.append(userid)
             }
             
             let page_info = edge_hashtag_to_media["page_info"] as! Dictionary<String, Any>
@@ -132,7 +143,6 @@ class ViewController: NSViewController {
             self.statusLabel.stringValue = "\(self.postList.count) post loaded.  Reading each posts..."
             }
                 print("Finished all post list requests.")
-            print(self.userIDList)
             self.loadAllPostContent(mode: LATESETTAGS_MODE)
             }
     }
@@ -197,10 +207,24 @@ class ViewController: NSViewController {
                     for item in edges {
                         let edge = item as! Dictionary<String, Any>
                         let node = edge["node"] as! Dictionary<String, Any>
-                        let shortcode = node["shortcode"] as! String
-                        print("\(shortcode)")
                         
-                        self.postList.append(shortcode)
+                        let taken_at_timestamp = node["taken_at_timestamp"] as! TimeInterval
+                        
+                        let pointTS = self.datePC.dateValue.timeIntervalSince1970
+                        
+                        if pointTS >= taken_at_timestamp && self.notIncludeAFCB.state == .on {
+                            //post was took before the setting time
+                            //let takenDate = Date(timeIntervalSince1970: self.lastDate)
+                            //self.exportList.append("##\(takenDate)")
+                            self.nGroup.leave()
+                            return
+                            
+                        }else{
+                            let shortcode = node["shortcode"] as! String
+                            print("\(shortcode)")
+                            self.postList.append(shortcode)
+                            self.lastDate = taken_at_timestamp
+                        }
                     }
                     let has_next_page = page_info["has_next_page"] as! Bool
                     if has_next_page == true && self.postList.count < self.countTF.intValue {
@@ -254,6 +278,7 @@ class ViewController: NSViewController {
                         page_info = edge_owner_to_timeline_media["page_info"] as! Dictionary<String, Any>
                         
                         edges = edge_owner_to_timeline_media["edges"] as! Array<Any>
+                        
                     }else if mode == LATESETTAGS_MODE{
                         let dic = data["hashtag"] as! Dictionary<String, Any>
                         let edge_hashtag_to_media = dic["edge_hashtag_to_media"]as! Dictionary<String, Any>
@@ -270,14 +295,26 @@ class ViewController: NSViewController {
                     for item in edges {
                         let edge = item as! Dictionary<String, Any>
                         let node = edge["node"] as! Dictionary<String, Any>
-                        let shortcode = node["shortcode"] as! String
-                        //print(shortcode)
-                        print("\(shortcode)")
-                        self.postList.append(shortcode)
                         
-                        let owner = node["owner"] as! Dictionary<String, Any>
-                        let userid = owner["id"] as! String
-                        self.userIDList.append(userid)
+                        
+                        let taken_at_timestamp = node["taken_at_timestamp"] as! TimeInterval
+                        
+                        let pointTS = self.datePC.dateValue.timeIntervalSince1970
+                        
+                        if pointTS >= taken_at_timestamp && self.notIncludeAFCB.state == .on {
+                            //post was took before the setting time
+                            //let takenDate = Date(timeIntervalSince1970: self.lastDate)
+                            //self.exportList.append("##\(takenDate)")
+                            self.nGroup.leave()
+                            return
+                            
+                        }else{
+                            let shortcode = node["shortcode"] as! String
+                            print("\(shortcode)")
+                            self.postList.append(shortcode)
+                            self.lastDate = taken_at_timestamp
+                        }
+                        
                     }
                     
                     let has_next_page = page_info["has_next_page"] as! Bool
@@ -329,7 +366,24 @@ class ViewController: NSViewController {
                         let graphql = json["graphql"] as! Dictionary<String, Any>
                         let shortcode_media = graphql["shortcode_media"] as! Dictionary<String, Any>
                         
+                        
+                        
                             if mode == POSTTAGS_MODE {
+                                
+                                if self.notIncludeAFCB.state == .off {
+                                    let taken_at_timestamp = shortcode_media["taken_at_timestamp"] as! TimeInterval
+
+                                    let pointTS = self.datePC.dateValue.timeIntervalSince1970
+
+                                    if pointTS >= taken_at_timestamp && self.isDatePassed == false{
+                                        let takenDate = Date(timeIntervalSince1970: self.lastDate)
+                                        self.exportList.append("##\(takenDate)")
+                                        self.isDatePassed = true
+
+                                    }
+                                    self.lastDate = taken_at_timestamp
+                                }
+                                
                                 let edge_media_to_caption = shortcode_media["edge_media_to_caption"] as! Dictionary<String, Any>
                                 let edges = edge_media_to_caption["edges"] as! Array<Any>
                                 if edges.count > 0 {
@@ -342,6 +396,8 @@ class ViewController: NSViewController {
                                     print("\(item)")
                                     self.exportList.append(item)
                                 }
+                                    
+                                
                             }
                             }else if mode == LATESETTAGS_MODE{
                                 let owner = shortcode_media["owner"] as! Dictionary<String, Any>
@@ -373,59 +429,21 @@ class ViewController: NSViewController {
         
         
         var fileStrData:String = ""
-//        for user in self.userArr {
-//            //each username
-//            fileStrData += "\"" + user + "\""
-//            //add "," except last one
-//            if user != userArr[userArr.count-1]{
-//                fileStrData += ","
-//            }
-//        }
-//        fileStrData += "\n"
 
-        print(self.exportList)
+
+        print("exportList:\(self.exportList)")
         
         for tag in self.exportList{
             fileStrData += tag
             fileStrData += "\n"
         }
         
-        //find largest array count in tagList
-//        var maxCount = 0
-//        for tags in exportList {
-//            if tags.count > maxCount {
-//                maxCount = tags.count
-//            }
-//        }
-//
-//        //taglist[user][tag]
-//        for t in 0 ... maxCount{
-//
-//            for u in 0 ... self.exportList.count {
-//
-//                if u < self.exportList.count  {
-//
-//                    if t < self.exportList[u].count {
-//                        let tag = self.exportList[u][t]
-//
-//                        fileStrData += "\"" + tag + "\","
-////                        if tag !=  self.exportList[u][self.exportList[u].count-1]{
-////                            fileStrData += ","
-////                        }
-//
-//                        //print(fileStrData)
-//                    }else{
-//                        fileStrData += ","
-//                    }
-//
-//                }else{
-//                    fileStrData += ","
-//                }
-//
-//
-//            }
-//            fileStrData += "\n"
-//        }
+        if self.notIncludeAFCB.state == .on {
+            let takenDate = Date(timeIntervalSince1970: self.lastDate)
+            fileStrData += "##\(takenDate)"
+        }
+        
+
         
         print(fileStrData)
 
