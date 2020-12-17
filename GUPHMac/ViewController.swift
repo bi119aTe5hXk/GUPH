@@ -51,6 +51,8 @@ class ViewController: NSViewController {
     var commentCountGULC = 0
     var likeCountGULC = 0
     var followerCountGULC = 0
+    
+    var userFollowerCountArr = Array<Int>.init()
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -496,6 +498,9 @@ class ViewController: NSViewController {
                         let username = owner["username"] as! String
                         self.exportList.append(username)
                         
+                        let edge_followed_by = owner["edge_followed_by"] as! Dictionary<String, Any>
+                        let user_follower = edge_followed_by["count"] as! Int
+                        self.userFollowerCountArr.append(user_follower)
                     }
 
                     self.nGroup.leave()
@@ -509,20 +514,26 @@ class ViewController: NSViewController {
         }
         nGroup.notify(queue: .main) {
             print("Finished all post data requests.")
-            self.exportFile()
+            self.exportFile(mode: mode)
             
         }
     }
 
-    func exportFile() {
+    func exportFile(mode:String) {
         statusLabel.stringValue = "Exporting \(exportList.count) data..."
 
         var fileStrData: String = ""
 
         print("exportList:\(exportList)")
-
+        var i = 0
         for tag in exportList {
             fileStrData += tag
+            if mode == MODE_GLTU {
+                fileStrData += ","
+                fileStrData += String(self.userFollowerCountArr[i])
+                i+=1
+            }
+            
             fileStrData += "\n"
         }
 
