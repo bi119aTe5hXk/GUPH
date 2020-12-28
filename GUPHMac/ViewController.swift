@@ -11,10 +11,29 @@ let MODE_GUPH = "user_post_tags"
 let MODE_GLTU = "latest_tags_user"
 let MODE_GULC = "user_likes_comments"
 class ViewController: NSViewController {
-    @IBOutlet var csrftokenTF: NSTextField!
-    @IBOutlet var sessionidTF: NSTextField!
-    @IBOutlet var qhTF: NSTextField!
-
+    @IBOutlet var csrftokenTF1: NSTextField!
+    @IBOutlet var sessionidTF1: NSTextField!
+    @IBOutlet var qhTF1: NSTextField!
+    
+    @IBOutlet var csrftokenTF2: NSTextField!
+    @IBOutlet var sessionidTF2: NSTextField!
+    @IBOutlet var qhTF2: NSTextField!
+    
+    @IBOutlet var csrftokenTF3: NSTextField!
+    @IBOutlet var sessionidTF3: NSTextField!
+    @IBOutlet var qhTF3: NSTextField!
+    
+    @IBOutlet var csrftokenTF4: NSTextField!
+    @IBOutlet var sessionidTF4: NSTextField!
+    @IBOutlet var qhTF4: NSTextField!
+    
+    @IBOutlet var csrftokenTF5: NSTextField!
+    @IBOutlet var sessionidTF5: NSTextField!
+    @IBOutlet var qhTF5: NSTextField!
+    
+    @IBOutlet var selectCookiesMenu: NSComboBox!
+    
+    
     // GUPH
     @IBOutlet var usernameTF: NSTextView!
 
@@ -54,20 +73,38 @@ class ViewController: NSViewController {
 
     var userFollowerCountArr = Array<Int>.init()
 
+    var selectedCSRToken: String!
+    var selectedSessionID: String!
+    var selectedQH: String!
+    
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         // Do any additional setup after loading the view.
-
-        if let csrftoken = userdefault.string(forKey: "csrftoken") {
-            csrftokenTF.stringValue = csrftoken
+        if let csrftokenArr = userdefault.array(forKey: "csrftokenArr"){
+        self.csrftokenTF1.stringValue = csrftokenArr[0] as! String
+        self.csrftokenTF2.stringValue = csrftokenArr[1] as! String
+        self.csrftokenTF3.stringValue = csrftokenArr[2] as! String
+        self.csrftokenTF4.stringValue = csrftokenArr[3] as! String
+        self.csrftokenTF5.stringValue = csrftokenArr[4] as! String
         }
-        if let sessionid = userdefault.string(forKey: "sessionid") {
-            sessionidTF.stringValue = sessionid
+        
+        if let sessionidArr = userdefault.array(forKey: "sessionidArr"){
+        self.sessionidTF1.stringValue = sessionidArr[0] as! String
+        self.sessionidTF2.stringValue = sessionidArr[1] as! String
+        self.sessionidTF3.stringValue = sessionidArr[2] as! String
+        self.sessionidTF4.stringValue = sessionidArr[3] as! String
+        self.sessionidTF5.stringValue = sessionidArr[4] as! String
         }
-        if let query_hash = userdefault.string(forKey: "query_hash") {
-            qhTF.stringValue = query_hash
+        
+        if let qhArr = userdefault.array(forKey: "query_hashArr"){
+        self.qhTF1.stringValue = qhArr[0] as! String
+        self.qhTF2.stringValue = qhArr[1] as! String
+        self.qhTF3.stringValue = qhArr[2] as! String
+        self.qhTF4.stringValue = qhArr[3] as! String
+        self.qhTF5.stringValue = qhArr[4] as! String
         }
-        applyCookie(self)
+        saveCookie(self)
 
         let calendar = Calendar(identifier: .gregorian)
         let currentDate = Date()
@@ -87,11 +124,66 @@ class ViewController: NSViewController {
         }
     }
 
-    @IBAction func applyCookie(_ sender: Any) {
-        userdefault.setValue(csrftokenTF.stringValue, forKey: "csrftoken")
-        userdefault.setValue(sessionidTF.stringValue, forKey: "sessionid")
-        userdefault.setValue(qhTF.stringValue, forKey: "query_hash")
-        setCookieValue(csrftokenstr: csrftokenTF.stringValue, sessionidstr: sessionidTF.stringValue)
+    @IBAction func saveCookie(_ sender: Any) {
+        let csrftokenArr = [self.csrftokenTF1.stringValue,
+                            self.csrftokenTF2.stringValue,
+                            self.csrftokenTF3.stringValue,
+                            self.csrftokenTF4.stringValue,
+                            self.csrftokenTF5.stringValue]
+        userdefault.setValue(csrftokenArr, forKey: "csrftokenArr")
+        
+        let sessionidArr = [self.sessionidTF1.stringValue,
+                            self.sessionidTF2.stringValue,
+                            self.sessionidTF3.stringValue,
+                            self.sessionidTF4.stringValue,
+                            self.sessionidTF5.stringValue]
+        userdefault.setValue(sessionidArr, forKey: "sessionidArr")
+        
+        let qhArr = [self.qhTF1.stringValue,
+                            self.qhTF2.stringValue,
+                            self.qhTF3.stringValue,
+                            self.qhTF4.stringValue,
+                            self.qhTF5.stringValue]
+        userdefault.setValue(qhArr, forKey: "query_hashArr")
+        userdefault.synchronize()
+    }
+    
+    func applyCookie(){
+        let select = self.selectCookiesMenu.intValue
+        print("select:\(select)")
+        switch select {
+        case 1:
+            self.selectedCSRToken = self.csrftokenTF1.stringValue
+            self.selectedSessionID = self.sessionidTF1.stringValue
+            self.selectedQH = self.qhTF1.stringValue
+            break
+        case 2:
+            self.selectedCSRToken = self.csrftokenTF2.stringValue
+            self.selectedSessionID = self.sessionidTF2.stringValue
+            self.selectedQH = self.qhTF2.stringValue
+            break
+        case 3:
+            self.selectedCSRToken = self.csrftokenTF3.stringValue
+            self.selectedSessionID = self.sessionidTF3.stringValue
+            self.selectedQH = self.qhTF3.stringValue
+            break
+        case 4:
+            self.selectedCSRToken = self.csrftokenTF4.stringValue
+            self.selectedSessionID = self.sessionidTF4.stringValue
+            self.selectedQH = self.qhTF4.stringValue
+            break
+        case 5:
+            self.selectedCSRToken = self.csrftokenTF5.stringValue
+            self.selectedSessionID = self.sessionidTF5.stringValue
+            self.selectedQH = self.qhTF5.stringValue
+            break
+        default:
+            print("Error: invalid cookie selection:\(select)")
+        }
+        if self.selectedCSRToken.lengthOfBytes(using: .utf8) > 0 && self.selectedSessionID.lengthOfBytes(using: .utf8) > 0{
+            setCookieValue(csrftokenstr: self.selectedCSRToken, sessionidstr: self.selectedSessionID)
+        }
+        
     }
 
     @IBAction func resetBTNP(_ sender: Any) {
@@ -112,6 +204,7 @@ class ViewController: NSViewController {
             self.statusLabel.stringValue = "Loading latest tags..."
         }
         nGroup.enter()
+        applyCookie()
         getTagList(tag: tagTF.stringValue.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!) { isSuccessed, value in
             if !isSuccessed! {
                 self.nGroup.leave()
@@ -186,6 +279,7 @@ class ViewController: NSViewController {
         }
 
         nGroup.enter()
+        applyCookie()
         getUser(username: user) { isSuccessed, value in
             if !isSuccessed! {
                 self.nGroup.leave()
@@ -282,6 +376,7 @@ class ViewController: NSViewController {
 
         exportList.append("\(user)")
         nGroup.enter()
+        applyCookie()
         getUser(username: user) { isSuccessed, value in
             if !isSuccessed! {
                 self.nGroup.leave()
@@ -362,7 +457,7 @@ class ViewController: NSViewController {
     }
 
     func loadNextPage(mode: String) {
-        if qhTF.stringValue.lengthOfBytes(using: .utf8) > 0 && postList.count < countTF.intValue {
+        if self.selectedQH.lengthOfBytes(using: .utf8) > 0 && postList.count < countTF.intValue {
             sleep(1)
             nGroup.enter()
             var nPV = ""
@@ -371,7 +466,8 @@ class ViewController: NSViewController {
             } else if mode == MODE_GLTU {
                 nPV = nextTagPageVariables(tag: tagTF.stringValue, end_cursor: end_cursor)
             }
-            getNextPage(query_hash: qhTF.stringValue, variables: nPV) { isSuccessed, value in
+            applyCookie()
+            getNextPage(query_hash: self.selectedQH, variables: nPV) { isSuccessed, value in
                 if isSuccessed! {
                     let json = value as! Dictionary<String, Any>
                     let data = json["data"] as! Dictionary<String, Any>
@@ -469,7 +565,7 @@ class ViewController: NSViewController {
             
             pcount += 1
             print(pcount)
-            
+            applyCookie()
             getPostContent(shortCode: scode) { isSuccessed, result in
                 if isSuccessed! {
                     let json = result as! Dictionary<String, Any>

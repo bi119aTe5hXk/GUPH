@@ -21,6 +21,7 @@ var requestManager = Alamofire.Session.default
 var cookieProps = Array<Any>.init()
 
 func setCookieValue(csrftokenstr:String,sessionidstr:String){
+    print("add token: \(csrftokenstr) ,session: \(sessionidstr) toCookie")
     csrftoken = csrftokenstr
     sessionid = sessionidstr
     cookieProps = [
