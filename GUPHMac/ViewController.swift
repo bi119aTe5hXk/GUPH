@@ -10,6 +10,8 @@ import Cocoa
 let MODE_GUPH = "user_post_tags"
 let MODE_GLTU = "latest_tags_user"
 let MODE_GULC = "user_likes_comments"
+
+
 class ViewController: NSViewController {
     @IBOutlet var csrftokenTF1: NSTextField!
     @IBOutlet var sessionidTF1: NSTextField!
@@ -54,6 +56,8 @@ class ViewController: NSViewController {
 
     @IBOutlet var statusLabel: NSTextField!
 
+    @IBOutlet var sleepTimeTF: NSTextField!
+    
     var end_cursor = ""
     var user_id = ""
     var userCountU = 0
@@ -196,6 +200,7 @@ class ViewController: NSViewController {
     // MARK: - GLTU: Latest Tags list user
 
     @IBAction func loadTagBTNP(_ sender: Any) {
+        postList = [String]()
         exportList = [String]()
         if tagTF.stringValue.lengthOfBytes(using: .utf8) <= 0 {
             return
@@ -458,7 +463,8 @@ class ViewController: NSViewController {
 
     func loadNextPage(mode: String) {
         if self.selectedQH.lengthOfBytes(using: .utf8) > 0 && postList.count < countTF.intValue {
-            sleep(1)
+            
+            sleep(UInt32(self.sleepTimeTF.intValue))
             nGroup.enter()
             var nPV = ""
             if mode == MODE_GUPH || mode == MODE_GULC {
@@ -561,58 +567,68 @@ class ViewController: NSViewController {
                 self.statusLabel.stringValue = "Loading content of posts..."
             }
             
-            sleep(1)
+            sleep(UInt32(self.sleepTimeTF.intValue))
             
             pcount += 1
-            print(pcount)
+            print("pcount:\(pcount)")
             applyCookie()
             getPostContent(shortCode: scode) { isSuccessed, result in
                 if isSuccessed! {
                     let json = result as! Dictionary<String, Any>
-                    let graphql = json["graphql"] as! Dictionary<String, Any>
-                    let shortcode_media = graphql["shortcode_media"] as! Dictionary<String, Any>
+                    if let graphql = json["graphql"]{
+                        let graphqldic = graphql as! Dictionary<String, Any>
+                        let shortcode_media = graphqldic["shortcode_media"] as! Dictionary<String, Any>
+                        
+                        if mode == MODE_GUPH {
+                            if self.notIncludeAFCB.state == .off {
+                                let taken_at_timestamp = shortcode_media["taken_at_timestamp"] as! TimeInterval
 
-                    if mode == MODE_GUPH {
-                        if self.notIncludeAFCB.state == .off {
-                            let taken_at_timestamp = shortcode_media["taken_at_timestamp"] as! TimeInterval
+                                let pointTS = self.datePC.dateValue.timeIntervalSince1970
 
-                            let pointTS = self.datePC.dateValue.timeIntervalSince1970
-
-                            if pointTS >= taken_at_timestamp && self.isDatePassed == false {
-                                let takenDate = Date(timeIntervalSince1970: self.lastDate)
-                                self.exportList.append("##\(takenDate)")
-                                self.isDatePassed = true
+                                if pointTS >= taken_at_timestamp && self.isDatePassed == false {
+                                    let takenDate = Date(timeIntervalSince1970: self.lastDate)
+                                    self.exportList.append("##\(takenDate)")
+                                    self.isDatePassed = true
+                                }
+                                self.lastDate = taken_at_timestamp
                             }
-                            self.lastDate = taken_at_timestamp
-                        }
 
-                        let edge_media_to_caption = shortcode_media["edge_media_to_caption"] as! Dictionary<String, Any>
-                        let edges = edge_media_to_caption["edges"] as! Array<Any>
-                        if edges.count > 0 {
-                            let edge = edges[0] as! Dictionary<String, Any>
-                            let node = edge["node"] as! Dictionary<String, Any>
-                            let text = node["text"] as! String
-                            // print(text)
-                            let tags = self.findHashTags(str: text)
-                            for item in tags {
-                                print("\(item)")
-                                self.exportList.append(item)
+                            let edge_media_to_caption = shortcode_media["edge_media_to_caption"] as! Dictionary<String, Any>
+                            let edges = edge_media_to_caption["edges"] as! Array<Any>
+                            if edges.count > 0 {
+                                let edge = edges[0] as! Dictionary<String, Any>
+                                let node = edge["node"] as! Dictionary<String, Any>
+                                let text = node["text"] as! String
+                                // print(text)
+                                let tags = self.findHashTags(str: text)
+                                for item in tags {
+                                    print("\(item)")
+                                    self.exportList.append(item)
+                                }
                             }
-                        }
-                    } else if mode == MODE_GLTU {
-                        let owner = shortcode_media["owner"] as! Dictionary<String, Any>
-                        let username = owner["username"] as! String
-                        self.exportList.append(username)
+                        } else if mode == MODE_GLTU {
+                            let owner = shortcode_media["owner"] as! Dictionary<String, Any>
+                            let username = owner["username"] as! String
+                            self.exportList.append(username)
 
-                        let edge_followed_by = owner["edge_followed_by"] as! Dictionary<String, Any>
-                        let user_follower = edge_followed_by["count"] as! Int
-                        self.userFollowerCountArr.append(user_follower)
+                            let edge_followed_by = owner["edge_followed_by"] as! Dictionary<String, Any>
+                            let user_follower = edge_followed_by["count"] as! Int
+                            self.userFollowerCountArr.append(user_follower)
+                        }
+                        
+                        
+                        
+                    }else{
+                        print("graphql not found or nil, pcount:\(pcount)")
                     }
                     
-                    self.nGroup.leave()
+
+                    
+                    
                 } else {
                     print("load failed:\(result as! String)")
                 }
+                self.nGroup.leave()
             }
         }
         DispatchQueue.main.async {

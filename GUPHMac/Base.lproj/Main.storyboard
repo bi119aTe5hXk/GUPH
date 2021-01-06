@@ -951,7 +951,7 @@
                                                     <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                                                     <clipView key="contentView" drawsBackground="NO" id="wO5-4P-Ffh">
                                                         <rect key="frame" x="0.0" y="0.0" width="400" height="162"/>
-                                                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                                                        <autoresizingMask key="autoresizingMask"/>
                                                         <subviews>
                                                             <textView importsGraphics="NO" richText="NO" verticallyResizable="YES" spellingCorrection="YES" smartInsertDelete="YES" id="lZQ-PD-7Fi">
                                                                 <rect key="frame" x="0.0" y="0.0" width="400" height="162"/>
@@ -1205,6 +1205,25 @@
                                     </objectValues>
                                 </comboBoxCell>
                             </comboBox>
+                            <textField verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="kTH-ET-aSR">
+                                <rect key="frame" x="426" y="50" width="39" height="21"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMinX="YES" flexibleMaxY="YES"/>
+                                <textFieldCell key="cell" scrollable="YES" lineBreakMode="clipping" selectable="YES" editable="YES" sendsActionOnEndEditing="YES" state="on" borderStyle="bezel" title="1" drawsBackground="YES" id="lhw-pz-aRx">
+                                    <numberFormatter key="formatter" formatterBehavior="default10_4" numberStyle="decimal" formatWidth="-1" minimumIntegerDigits="1" maximumIntegerDigits="2000000000" maximumFractionDigits="3" id="mfx-f1-8ws"/>
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="controlTextColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
+                            <textField horizontalHuggingPriority="251" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="xK6-tE-cKS">
+                                <rect key="frame" x="381" y="53" width="42" height="16"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <textFieldCell key="cell" lineBreakMode="clipping" title="Sleep:" id="4Ef-Dx-0J9">
+                                    <font key="font" metaFont="system"/>
+                                    <color key="textColor" name="labelColor" catalog="System" colorSpace="catalog"/>
+                                    <color key="backgroundColor" name="textBackgroundColor" catalog="System" colorSpace="catalog"/>
+                                </textFieldCell>
+                            </textField>
                         </subviews>
                     </view>
                     <connections>
@@ -1231,6 +1250,7 @@
                         <outlet property="sessionidTF3" destination="ceR-pQ-P0O" id="Gly-4f-zvg"/>
                         <outlet property="sessionidTF4" destination="R39-8G-z3b" id="qVW-KR-TNs"/>
                         <outlet property="sessionidTF5" destination="Q0y-o9-zd8" id="4Cc-e9-96Y"/>
+                        <outlet property="sleepTimeTF" destination="kTH-ET-aSR" id="jrg-xs-lxQ"/>
                         <outlet property="statusLabel" destination="dqH-et-lSt" id="IMW-So-nju"/>
                         <outlet property="tagTF" destination="ZTD-yU-DNM" id="FJu-Mu-mns"/>
                         <outlet property="usernameTF" destination="RyY-O7-OtR" id="V0W-F1-yRm"/>
