@@ -68,6 +68,12 @@ func getTagList(tag:String, completion: @escaping (Bool?, Any?) -> Void){
         completion(isSuccessed, value);
     }
 }
+func tagIncludeReel(qh:String,tag:String,completion: @escaping (Bool?, Any?) -> Void){
+    let urlstr = mainURL + "graphql/query/?query_hash=\(qh)&variables=%7B%22\(tag)%22%3A%22tagname%22%2C%22include_reel%22%3Atrue%2C%22include_logged_out%22%3Afalse%7D"
+    conServ(serviceURL: urlstr) { (isSuccessed, value) in
+        completion(isSuccessed, value);
+    }
+}
 
 
 func conServ(serviceURL: String, completion: @escaping (Bool?, Any?) -> Void) {

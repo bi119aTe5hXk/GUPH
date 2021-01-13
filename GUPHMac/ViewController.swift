@@ -210,6 +210,16 @@ class ViewController: NSViewController {
         }
         nGroup.enter()
         applyCookie()
+        
+        if self.selectedQH.lengthOfBytes(using: .utf8) > 0 {
+            tagIncludeReel(qh: self.selectedQH, tag: tagTF.stringValue) { (isSuccessed, result) in
+                if !isSuccessed! {
+                    print("IncludeReel failed")
+                }
+            }
+        }
+        
+        
         getTagList(tag: tagTF.stringValue.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed)!) { isSuccessed, value in
             if !isSuccessed! {
                 self.nGroup.leave()
